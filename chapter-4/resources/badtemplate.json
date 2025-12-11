@@ -44,12 +44,6 @@
     "ubuntuOSVersion": {
       "type": "string",
       "defaultValue": "18.04-LTS",
-      "allowedValues": [
-        "12.04.5-LTS",
-        "14.04.5-LTS",
-        "16.04.0-LTS",
-        "18.04-LTS"
-      ],
       "metadata": {
         "description": "The Ubuntu version for the VM. This will pick a fully patched image of this given Ubuntu version."
       }
@@ -244,9 +238,9 @@
       "name": "[variables('networkInterfaceName')]",
       "location": "[parameters('location')]",
       "dependsOn": [
-        "[resourceId('Microsoft.Network/networkSecurityGroups/', parameters('networkSecurityGroupName'))]",
-        "[resourceId('Microsoft.Network/virtualNetworks/', parameters('virtualNetworkName'))]",
-        "[resourceId('Microsoft.Network/publicIpAddresses/', variables('publicIpAddressName'))]"
+        "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroupName'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]",
+        "[resourceId('Microsoft.Network/publicIpAddresses', variables('publicIpAddressName'))]"
       ],
       "properties": {
         "ipConfigurations": [
@@ -258,7 +252,7 @@
               },
               "privateIPAllocationMethod": "Dynamic",
               "publicIpAddress": {
-                "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName'))]"
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIpAddressName'))]"
               }
             }
           }
@@ -306,14 +300,13 @@
           {
             "name": "[parameters('subnetName')]",
             "properties": {
-              "addressPrefix": "[variables('subnetAddressPrefix')]",
-              "privateEndpointNetworkPolicies": "Enabled",
-              "privateLinkServiceNetworkPolicies": "Enabled"
+              "addressPrefix": "[variables('subnetAddressPrefix')]"
             }
           }
         ]
       }
     },
+
     {
       "type": "Microsoft.Network/publicIpAddresses",
       "apiVersion": "2020-06-01",
@@ -338,7 +331,7 @@
       "name": "[parameters('vmName')]",
       "location": "[parameters('location')]",
       "dependsOn": [
-        "[resourceId('Microsoft.Network/networkInterfaces/', variables('networkInterfaceName'))]"
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))]"
       ],
       "properties": {
         "hardwareProfile": {
@@ -375,7 +368,7 @@
     },
     {
       "type": "Microsoft.Automation/automationAccounts",
-      "apiVersion": "2015-01-01-preview",
+      "apiVersion": "2020-01-13-preview",
       "name": "[parameters('accountName')]",
       "location": "[parameters('location')]",
       "dependsOn": [],
@@ -388,7 +381,7 @@
       "resources": [
         {
           "type": "runbooks",
-          "apiVersion": "2015-01-01-preview",
+          "apiVersion": "2020-01-13-preview",
           "name": "[parameters('sampleGraphicalRunbookName')]",
           "location": "[parameters('location')]",
           "dependsOn": [
@@ -408,7 +401,7 @@
         },
         {
           "type": "runbooks",
-          "apiVersion": "2015-01-01-preview",
+          "apiVersion": "2020-01-13-preview",
           "name": "[parameters('samplePowerShellRunbookName')]",
           "location": "[parameters('location')]",
           "dependsOn": [
@@ -428,10 +421,11 @@
         },
         {
           "type": "runbooks",
-          "apiVersion": "2015-01-01-preview",
+          "apiVersion": "2020-01-13-preview",
           "name": "[parameters('samplePython2RunbookName')]",
           "location": "[parameters('location')]",
           "dependsOn": [
+            
             "[concat('Microsoft.Automation/automationAccounts/', parameters('accountName'))]"
           ],
           "tags": {},
@@ -494,12 +488,11 @@
             }
           ],
           "appCommandLine": "",
-          "linuxFxVersion": "DOCKER|appsvcorg/wordpress-alpine-php:0.72"
+          "linuxFxVersion": "DOCKER|appsvcorg/wordpress-alpine-php:latest"
         },
       "name": "[parameters('webappname')]",
       "clientAffinityEnabled": false,
-      "serverFarmId": "[variables('hostingPlanName')]"
-      },
+      "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]"      },
       "apiVersion": "2018-11-01",
       "location": "[parameters('location')]"
     },
@@ -521,61 +514,57 @@
             "kind": "linux"
         },
     {
-            "name": "[variables('serverName')]",
-            "type": "Microsoft.DBforMySQL/servers",
-            "apiVersion": "2017-12-01-preview",
-            "location": "[parameters('location')]",
-            "properties": {
-        "createMode": "Default",
+      "name": "[variables('serverName')]",
+      "type": "Microsoft.DBforMySQL/flexibleServers",
+      "apiVersion": "2021-05-01",
+      "location": "[parameters('location')]",
+      "properties": {
         "version": "[parameters('mysqlVersion')]",
         "administratorLogin": "[parameters('administratorLogin')]",
         "administratorLoginPassword": "[parameters('administratorLoginPassword')]",
-        "storageProfile": {
-          "storageMB": "[parameters('dbSkuSizeMB')]",
-          "backupRetentionDays": 7,
-          "geoRedundantBackup": "Disabled"
+        "storage": {
+          "storageSizeGB": "[div(parameters('dbSkuSizeMB'), 1024)]"
         },
-        "sslEnforcement": "Disabled"
+        "network": {
+          "publicNetworkAccess": "Enabled"
+      }
       },
-            "sku": {
-                "name": "[parameters('dbSkuName')]",
-                "tier": "[parameters('dbSkuTier')]",
-                "capacity": "[parameters('dbSkucapacity')]",
-                "size": "[parameters('dbSkuSizeMB')]",
-                "family": "[parameters('databaseSkuFamily')]"
-            },
-            "resources": [
-                {
-                    "name": "AllowAll",
-                    "type": "firewallrules",
-                    "apiVersion": "2017-12-01-preview",
-                    "properties": {
-                        "startIpAddress": "0.0.0.0",
-                        "endIpAddress": "255.255.255.255"
-                    },
-                    "location": "[parameters('location')]",
-                    "dependsOn": [
-                        "[concat('Microsoft.DBforMySQL/servers/', variables('serverName'), '/databases/' , variables('databaseName'))]",
-                        "[concat('Microsoft.DBforMySQL/servers/', variables('serverName'))]"
-                    ]
-                },
-                {
-                    "name": "[variables('databaseName')]",
-                    "type": "databases",
-                    "apiVersion": "2017-12-01-preview",
-                    "properties": {
-                        "charset": "utf8",
-                        "collation": "utf8_general_ci"
-                    },
-                    "dependsOn": [
-                        "[concat('Microsoft.DBforMySQL/servers/', variables('serverName'))]"
-                    ]
-                }
-            ],
-            "tags": {
-                "AppProfile": "Wordpress"
-            }
+      "sku": {
+        "name": "[parameters('dbSkuName')]",
+        "tier": "[parameters('dbSkuTier')]",
+        "capacity": "[parameters('dbSkucapacity')]"
+      },
+      "resources": [
+        {
+          "name": "AllowAll",
+          "type": "firewallRules",
+          "apiVersion": "2021-05-01",
+          "properties": {
+            "startIpAddress": "0.0.0.0",
+            "endIpAddress": "255.255.255.255"
+          },
+          "dependsOn": [
+            "[resourceId('Microsoft.DBforMySQL/flexibleServers', variables('serverName'))]"
+          ]
+        },
+        {
+          "name": "[variables('databaseName')]",
+          "type": "databases",
+          "apiVersion": "2021-05-01",
+          "properties": {
+            "charset": "utf8",
+            "collation": "utf8_general_ci"
+          },
+          "dependsOn": [
+            "[resourceId('Microsoft.DBforMySQL/flexibleServers', variables('serverName'))]"
+          ]
         }
+      ],
+      "tags": {
+        "AppProfile": "Wordpress"
+      }
+    }
+
   ],
   "outputs": {
     "adminUsername": {
@@ -588,11 +577,11 @@
     },
     "hostname": {
       "type": "string",
-      "value": "[reference(variables('publicIPAddressName')).dnsSettings.fqdn]"
+      "value": "[reference(variables('publicIpAddressName')).dnsSettings.fqdn]"
     },
     "sshCommand": {
       "type": "string",
-      "value": "[concat('ssh ', parameters('adminUsername'), '@', reference(variables('publicIPAddressName')).dnsSettings.fqdn)]"
+      "value": "[concat('ssh ', parameters('adminUsername'), '@', reference(variables('publicIpAddressName')).dnsSettings.fqdn)]"
     }
   }
 }
