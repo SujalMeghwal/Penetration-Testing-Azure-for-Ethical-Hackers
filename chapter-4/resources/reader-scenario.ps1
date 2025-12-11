@@ -17,7 +17,8 @@ $subid=$(az account show --query id --output tsv)
 Write-Host -ForegroundColor Green "####################################################################"
 Write-Host -ForegroundColor Green "# Assigning the Reader role to $user #"
 Write-Host -ForegroundColor Green "####################################################################"
-az role assignment create --role "Reader" --assignee $user --subscription $subid
+az role assignment create --role Reader --assignee $user --scope "/subscriptions/$subid"
+
 
 ## Set variables and create resource group
 $random = Get-Random -Maximum 100000 -Minimum 10000
