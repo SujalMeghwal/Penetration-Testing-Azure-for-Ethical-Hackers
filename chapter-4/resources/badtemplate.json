@@ -43,7 +43,7 @@
     },
     "ubuntuOSVersion": {
       "type": "string",
-      "defaultValue": "18.04-LTS",
+      "defaultValue": "22_04-lts",
       "metadata": {
         "description": "The Ubuntu version for the VM. This will pick a fully patched image of this given Ubuntu version."
       }
@@ -144,26 +144,20 @@
     "dbSkucapacity": {
       "type": "int",
       "defaultValue": 2,
-      "allowedValues": [
-        2,
-        4,
-        8,
-        16,
-        32
-      ],
+      "allowedValues": [2, 4],
       "metadata": {
-        "description": "Azure database for mySQL compute capacity in vCores (2,4,8,16,32)"
+        "description": "vCore count"
       }
     },
     "dbSkuName": {
       "type": "string",
-      "defaultValue": "GP_Gen5_2",
+      "defaultValue": "Standard_D2ds_v4",
       "allowedValues": [
-        "GP_Gen5_2",
-        "GP_Gen5_4"
+        "Standard_D2ds_v4",
+        "Standard_D4ds_v4"
       ],
       "metadata": {
-        "description": "Azure database for mySQL sku name "
+        "description": "Valid SKU names for Azure MySQL Flexible Server"
       }
     },
     "dbSkuSizeMB": {
@@ -181,12 +175,10 @@
       "type": "string",
       "defaultValue": "GeneralPurpose",
       "allowedValues": [
+        "Burstable",
         "GeneralPurpose",
         "MemoryOptimized"
-      ],
-      "metadata": {
-        "description": "Azure database for mySQL pricing tier"
-      }
+      ]
     },
     "mysqlVersion": {
       "type": "string",
@@ -197,13 +189,6 @@
       ],
       "metadata": {
         "description": "MySQL version"
-      }
-    },
-    "databaseskuFamily": {
-      "type": "string",
-      "defaultValue": "Gen5",
-      "metadata": {
-        "description": "Azure database for mySQL sku family"
       }
     }
 
@@ -306,23 +291,21 @@
         ]
       }
     },
-
     {
       "type": "Microsoft.Network/publicIpAddresses",
       "apiVersion": "2020-06-01",
       "name": "[variables('publicIpAddressName')]",
       "location": "[parameters('location')]",
       "sku": {
-        "name": "Basic",
+        "name": "Standard",
         "tier": "Regional"
       },
       "properties": {
-        "publicIpAllocationMethod": "Dynamic",
+        "publicIpAllocationMethod": "Static",
         "publicIPAddressVersion": "IPv4",
         "dnsSettings": {
           "domainNameLabel": "[parameters('dnsLabelPrefix')]"
-        },
-        "idleTimeoutInMinutes": 4
+        }
       }
     },
     {
@@ -346,8 +329,8 @@
           },
           "imageReference": {
             "publisher": "Canonical",
-            "offer": "UbuntuServer",
-            "sku": "[parameters('ubuntuOSVersion')]",
+            "offer": "0001-com-ubuntu-server-jammy",
+            "sku": "22_04-lts",
             "version": "latest"
           }
         },
@@ -513,27 +496,28 @@
             },
             "kind": "linux"
         },
-    {
-      "name": "[variables('serverName')]",
-      "type": "Microsoft.DBforMySQL/flexibleServers",
-      "apiVersion": "2021-05-01",
-      "location": "[parameters('location')]",
-      "properties": {
-        "version": "[parameters('mysqlVersion')]",
-        "administratorLogin": "[parameters('administratorLogin')]",
-        "administratorLoginPassword": "[parameters('administratorLoginPassword')]",
-        "storage": {
-          "storageSizeGB": "[div(parameters('dbSkuSizeMB'), 1024)]"
-        },
-        "network": {
-          "publicNetworkAccess": "Enabled"
-      }
-      },
-      "sku": {
-        "name": "[parameters('dbSkuName')]",
-        "tier": "[parameters('dbSkuTier')]",
-        "capacity": "[parameters('dbSkucapacity')]"
-      },
+        {
+          "name": "[variables('serverName')]",
+          "type": "Microsoft.DBforMySQL/flexibleServers",
+          "apiVersion": "2021-05-01",
+          "location": "[parameters('location')]",
+          "properties": {
+            "version": "[parameters('mysqlVersion')]",
+            "administratorLogin": "[parameters('administratorLogin')]",
+            "administratorLoginPassword": "[parameters('administratorLoginPassword')]",
+            "availabilityZone": "1",
+            "storage": {
+              "storageSizeGB": "[div(parameters('dbSkuSizeMB'), 1024)]"
+            },
+            "network": {
+              "publicNetworkAccess": "Enabled"
+            }
+          },
+          "sku": {
+            "name": "[parameters('dbSkuName')]",
+            "tier": "[parameters('dbSkuTier')]",
+            "capacity": "[parameters('dbSkucapacity')]"
+          },
       "resources": [
         {
           "name": "AllowAll",
