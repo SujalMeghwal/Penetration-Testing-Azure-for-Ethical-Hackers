@@ -43,7 +43,7 @@ $tenantid=$(echo $containerapp | jq -r .tenant)
 $userid=$(az ad user list --upn $user --query [].objectId -o tsv)
 
 ## Download Docker file
-Invoke-WebRequest -Uri https://raw.githubusercontent.com/PacktPublishing/Penetration-Testing-Azure-for-Ethical-Hackers/main/chapter-4/resources/Dockerfile -OutFile Dockerfile
+Invoke-WebRequest -Uri https://github.com/SujalMeghwal/Penetration-Testing-Azure-for-Ethical-Hackers/blob/main/chapter-4/resources/Dockerfile -OutFile Dockerfile
 
 ## Modify Docker file
 sed -i 's/"$containerappid"/"'"$containerappid"'"/' Dockerfile
@@ -59,7 +59,7 @@ az acr build --resource-group $group --registry $acrname --image nodeapp-web:v1 
 az ad app owner add --id $customappid --owner-object-id $userid
 
 # Deploy ARM Template
-az deployment group create --name TemplateDeployment --resource-group $group --template-uri "https://raw.githubusercontent.com/PacktPublishing/Penetration-Testing-Azure-for-Ethical-Hackers/main/chapter-4/resources/badtemplate.json"
+az deployment group create --name TemplateDeployment --resource-group $group --template-uri "https://raw.githubusercontent.com/SujalMeghwal/Penetration-Testing-Azure-for-Ethical-Hackers/refs/heads/main/chapter-4/resources/badtemplate.json"
 
 az vm identity assign -g $group -n LinuxVM --role Contributor --scope /subscriptions/$subid
 
